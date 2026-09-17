@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ---------------------------------------------------------
+    // GLOBALS
+    // ---------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if true; // ALLOW EVERYTHING FOR KEY-VALUE STORE IN PROTOTYPE
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && (request.auth.token.email == 'customersupport056@gmail.com' || request.auth.token.email == 'admin001@gmail.com');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ---------------------------------------------------------
+    // PROFILES
+    // ---------------------------------------------------------
+    function isValidProfile(data) {
+      return data.keys().hasAll(['id', 'email', 'full_name', 'role', 'tier', 'status', 'kyc_status', 'created_at']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.full_name is string && data.full_name.size() <= 128 &&
+             data.role is string && data.role.size() <= 64 &&
+             data.tier is string && data.tier.size() <= 64 &&
+             data.status is string && data.status.size() <= 64 &&
+             data.kyc_status is string && data.kyc_status.size() <= 64 &&
+             data.created_at is string && data.created_at.size() <= 64;
+    }
+
+    match /profiles/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidProfile(incoming()) && incoming().role == 'user' && incoming().tier == 'standard';
+      allow update: if (
+        isAdmin() || 
+        (isOwner(userId) && isValidProfile(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['full_name', 'login_pin', 'transaction_pin']))
+      );
+    }
+
+    // ---------------------------------------------------------
+    // ACCOUNTS
+    // ---------------------------------------------------------
+    function isValidAccount(data) {
+      return data.keys().hasAll(['id', 'user_id', 'type', 'balance', 'label', 'currency', 'account_number']) &&
+             data.user_id is string && data.user_id.size() <= 128 &&
+             data.type is string && data.type.size() <= 32 &&
+             data.balance is number &&
+             data.label is string && data.label.size() <= 128 &&
+             data.currency is string && data.currency.size() <= 32 &&
+             data.account_number is string && data.account_number.size() <= 64;
+    }
+
+    match /accounts/{accountId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().user_id == request.auth.uid);
+      allow create: if (isAdmin() || isOwner(incoming().user_id)) && isValidAccount(incoming());
+      allow update: if (isAdmin() || (isOwner(existing().user_id) && isValidAccount(incoming())));
+      allow delete: if isAdmin();
+      
+      // Specifically allow queries filtering by user_id
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+    }
+
+    // ---------------------------------------------------------
+    // TRANSACTIONS
+    // ---------------------------------------------------------
+    function isValidTx(data) {
+      return data.keys().hasAll(['id', 'user_id', 'amount', 'type', 'category', 'description', 'status', 'created_at', 'account_id', 'currency']) &&
+             data.user_id is string && data.amount is number;
+    }
+    match /transactions/{txId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().user_id == request.auth.uid);
+      allow create: if (isAdmin() || isOwner(incoming().user_id)) && isValidTx(incoming());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+    }
+    
+    // ---------------------------------------------------------
+    // CARDS
+    // ---------------------------------------------------------
+    function isValidCard(data) {
+      return data.keys().hasAll(['id', 'user_id', 'number', 'holder_name', 'expiry', 'cvc', 'type', 'is_frozen', 'balance_limit', 'created_at']) &&
+             data.user_id is string;
+    }
+    match /cards/{cardId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().user_id == request.auth.uid);
+      allow create: if (isAdmin() || isOwner(incoming().user_id)) && isValidCard(incoming());
+      allow update: if isAdmin() || (isOwner(existing().user_id) && isValidCard(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['is_frozen']));
+      allow delete: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+    }
+    
+    // ---------------------------------------------------------
+    // CRYPTO WALLETS
+    // ---------------------------------------------------------
+    function isValidWallet(data) {
+      return data.keys().hasAll(['id', 'user_id', 'coin_id', 'symbol', 'name', 'balance', 'avg_buy_price', 'current_price', 'price_change_24h']) && data.user_id is string;
+    }
+    match /crypto_wallets/{walletId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().user_id == request.auth.uid);
+      allow create: if (isAdmin() || isOwner(incoming().user_id)) && isValidWallet(incoming());
+      allow update: if isAdmin() || (isOwner(existing().user_id) && isValidWallet(incoming()));
+      allow delete: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+    }
+    
+    // ---------------------------------------------------------
+    // NOTIFICATIONS
+    // ---------------------------------------------------------
+    function isValidNotif(data) {
+      return data.keys().hasAll(['id', 'user_id', 'title', 'message', 'type', 'is_read', 'created_at']) && data.user_id is string;
+    }
+    match /notifications/{notifId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().user_id == request.auth.uid);
+      allow create: if (isAdmin() || isOwner(incoming().user_id)) && isValidNotif(incoming());
+      allow update: if isAdmin() || (isOwner(existing().user_id) && isValidNotif(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['is_read']));
+      allow delete: if isAdmin() || isOwner(existing().user_id);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+    }
+
+    // ---------------------------------------------------------
+    // TRANSFERS
+    // ---------------------------------------------------------
+    match /transfers/{transferId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().user_id == request.auth.uid);
+      allow create: if (isAdmin() || isOwner(incoming().user_id));
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+    }
+
+    // ---------------------------------------------------------
+    // GIFT CARDS
+    // ---------------------------------------------------------
+    match /gift_cards/{giftCardId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().user_id == request.auth.uid);
+      allow create: if (isAdmin() || isOwner(incoming().user_id));
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+    }
+
+    // ---------------------------------------------------------
+    // APP STATE (Sync Engine)
+    // ---------------------------------------------------------
+    match /app_state/{stateId} {
+      allow read, write: if true;
+    }
+  }
+}

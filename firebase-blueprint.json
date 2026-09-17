@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "full_name": { "type": "string" },
+        "avatar_url": { "type": "string" },
+        "role": { "type": "string" },
+        "tier": { "type": "string" },
+        "status": { "type": "string" },
+        "kyc_status": { "type": "string" },
+        "created_at": { "type": "string" },
+        "login_pin": { "type": "string" },
+        "transaction_pin": { "type": "string" }
+      },
+      "required": ["id", "email", "full_name", "role", "tier", "status", "kyc_status", "created_at"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "User holding account (USD, savings, crypto)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "type": { "type": "string" },
+        "balance": { "type": "number" },
+        "label": { "type": "string" },
+        "currency": { "type": "string" },
+        "account_number": { "type": "string" }
+      },
+      "required": ["id", "user_id", "type", "balance", "label", "currency", "account_number"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Transaction record for a specific account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string" },
+        "created_at": { "type": "string" },
+        "account_id": { "type": "string" },
+        "recipient": { "type": "string" },
+        "currency": { "type": "string" }
+      },
+      "required": ["id", "user_id", "amount", "type", "category", "description", "status", "created_at", "account_id", "currency"]
+    },
+    "Card": {
+      "title": "Card",
+      "description": "Bank card",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "number": { "type": "string" },
+        "holder_name": { "type": "string" },
+        "expiry": { "type": "string" },
+        "cvc": { "type": "string" },
+        "type": { "type": "string" },
+        "is_frozen": { "type": "boolean" },
+        "balance_limit": { "type": "number" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "number", "holder_name", "expiry", "cvc", "type", "is_frozen", "balance_limit", "created_at"]
+    },
+    "CryptoWallet": {
+      "title": "CryptoWallet",
+      "description": "User crypto holdings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "coin_id": { "type": "string" },
+        "symbol": { "type": "string" },
+        "name": { "type": "string" },
+        "balance": { "type": "number" },
+        "avg_buy_price": { "type": "number" },
+        "current_price": { "type": "number" },
+        "price_change_24h": { "type": "number" }
+      },
+      "required": ["id", "user_id", "coin_id", "symbol", "name", "balance", "avg_buy_price", "current_price", "price_change_24h"]
+    },
+    "TransferRecord": {
+      "title": "TransferRecord",
+      "description": "Record of a transfer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "recipient_name": { "type": "string" },
+        "recipient_account": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "notes": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "recipient_name", "recipient_account", "amount", "currency", "type", "status", "created_at"]
+    },
+    "NotificationRecord": {
+      "title": "NotificationRecord",
+      "description": "User notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "is_read": { "type": "boolean" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "title", "message", "type", "is_read", "created_at"]
+    },
+    "GiftCardRecord": {
+      "title": "GiftCardRecord",
+      "description": "Gift cards",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "code": { "type": "string" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "code", "type", "amount", "status", "created_at"]
+    },
+    "AppState": {
+      "title": "AppState",
+      "description": "Application state sync store document",
+      "type": "object",
+      "properties": {
+        "data": { "type": "string", "description": "Serialized JSON application state payload" }
+      },
+      "required": ["data"]
+    }
+  },
+  "firestore": {
+    "/app_state/{stateId}": { "schema": { "$ref": "#/entities/AppState" }, "description": "Stores synchronized application state key-values across sessions" },
+    "/profiles/{profileId}": { "schema": { "$ref": "#/entities/Profile" }, "description": "Stores user profiles" },
+    "/accounts/{accountId}": { "schema": { "$ref": "#/entities/Account" }, "description": "Stores user accounts" },
+    "/transactions/{transactionId}": { "schema": { "$ref": "#/entities/Transaction" }, "description": "Stores transaction history" },
+    "/cards/{cardId}": { "schema": { "$ref": "#/entities/Card" }, "description": "Stores user cards" },
+    "/crypto_wallets/{walletId}": { "schema": { "$ref": "#/entities/CryptoWallet" }, "description": "Stores crypto wallet holdings" },
+    "/transfers/{transferId}": { "schema": { "$ref": "#/entities/TransferRecord" }, "description": "Stores user transfer requests" },
+    "/notifications/{notificationId}": { "schema": { "$ref": "#/entities/NotificationRecord" }, "description": "User notifications" },
+    "/gift_cards/{giftCardId}": { "schema": { "$ref": "#/entities/GiftCardRecord" }, "description": "Gift card purchases" }
+  }
+}

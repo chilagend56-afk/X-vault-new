@@ -1,0 +1,8 @@
+{
+  "name": "Remix SmartVault 3",
+  "description": "Futuristic fintech banking web application with ultra-premium neon glassmorphism UI, accounts, transfers, crypto wallet, custom cards, and advanced portfolio analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
